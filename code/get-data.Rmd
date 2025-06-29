@@ -1,0 +1,108 @@
+---
+title: "Gather data from `gssr` package"
+output: html_document
+date: "2025-06-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Install libraries and data documentation
+
+```{r, echo=T, warning=F, message=F}
+library(tidyverse)
+library(remotes)
+library(tibble)
+
+#remotes::install_github("kjhealy/gssr")
+library(gssr)
+
+#remotes::install_github("kjhealy/gssrdoc")
+library(gssrdoc)
+```
+
+# Gather data
+
+```{r}
+# 2022 data
+gss22 <- gss_get_yr(2022)
+gss22
+
+
+# 2020 panel data
+data("gss_panel20")
+#str(gss_panel20)
+```
+
+# Select variablbes
+
+# Define strata
+
+From paper: https://www.sciencedirect.com/science/article/pii/S235282732400065X#sec2
+
+This document demonstrates how to construct intersectional strata from the General Social Survey (GSS) data, starting from binary categories and multiplying up to 384 strata. The mathematics follows the approach used by Evans et al. (2018).
+
+## Step 1: Define Categories
+
+Suppose we use the following variables and categories:
+- Sex: 2 categories (e.g., Male, Female)
+- Race/Ethnicity: 3 categories (e.g., White, Black, Other)
+- Education: 4 categories (e.g., Less than HS, HS, Some College, BA+)
+- Income: 4 categories (quartiles)
+- Age: 4 categories (e.g., 18-34, 35-49, 50-64, 65+)
+
+The total number of intersectional strata is the product of the number of categories in each variable:
+
+\[
+\text{Total Strata} = 2 \ (\text{Sex}) \times 3 \ (\text{Race}) \times 4 \ (\text{Education}) \times 4 \ (\text{Income}) \times 4 \ (\text{Age}) = 384
+\]
+
+## Step 2: Mathematical Generalization
+
+If you start with only two binary categories (e.g., Sex and Race with 2 categories each):
+
+\[
+2 \ (\text{Sex}) \times 2 \ (\text{Race}) = 4 \text{ strata}
+\]
+
+Adding more categories multiplies the number of strata:
+
+\[
+2 \times 3 = 6 \text{ strata (Sex and Race/Ethnicity)}
+\]
+\[
+2 \times 3 \times 4 = 24 \text{ strata (add Education)}
+\]
+\[
+2 \times 3 \times 4 \times 4 = 96 \text{ strata (add Income)}
+\]
+\[
+2 \times 3 \times 4 \times 4 \times 4 = 384 \text{ strata (add Age)}
+\]
+
+This approach enables the construction of intersectional strata for nuanced analysis of social inequalities. The total number of strata is always the product of the number of categories in each variable.
+
+# Algorithm
+
+## Sample data
+
+```{r}
+set.seed(123)
+N <- 33000
+gss <- data.frame(
+sex = sample(c("Male", "Female"), N, replace = TRUE),
+race = sample(c("White", "Black", "Other"), N, replace = TRUE, prob = c(0.7, 0.2, 0.1)),
+education = sample(c("Less than HS", "HS", "Some College", "BA+"), N, replace = TRUE),
+income = sample(c("Q1", "Q2", "Q3", "Q4"), N, replace = TRUE),
+age = sample(c("18-34", "35-49", "50-64", "65+"), N, replace = TRUE)
+)
+gss$stratum <- interaction(gss$sex, gss$race, gss$education, gss$income, gss$age, drop = TRUE)
+n_strata <- length(unique(gss$stratum))
+n_strata
+strata_sizes <- table(gss$stratum)
+summary(strata_sizes)
+```
+
+
+
